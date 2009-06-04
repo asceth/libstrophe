@@ -40,7 +40,6 @@ elseif(WIN32)
 endif()
 
 set(Strophe_LIBS Expat ssl resolv)
-message(${Strophe_LIBS})
 
 add_library(Strophe ${Strophe_LIB_TYPE} ${HEADER_FILES} ${SOURCE_FILES} ${PLATFORM_SOURCE_FILES})
 

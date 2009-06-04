@@ -12,8 +12,6 @@ project(Strophe)
 # Include necessary submodules
 set(CMAKE_MODULE_PATH
   "${Strophe_SOURCE_DIR}/cmake"
-  "${Strophe_SOURCE_DIR}/cmake/utils"
-  "${Strophe_SOURCE_DIR}/cmake/packages"
 )
 include(CMakeDependentOption)
 set(Strophe_WORK_DIR ${Strophe_BINARY_DIR})
@@ -124,7 +122,9 @@ add_subdirectory(deps)
 add_subdirectory(src)
 
 # Setup samples
-add_subdirectory(examples)
+if(Strophe_BUILD_SAMPLES)
+  add_subdirectory(examples)
+endif()
 
 # Install CMake modules
 add_subdirectory(cmake)

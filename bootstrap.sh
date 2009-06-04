@@ -1,5 +1,5 @@
 #!/bin/bash
 
-aclocal -I /usr/local/share/aclocal
+aclocal -I /opt/local/share/aclocal
 automake --add-missing --foreign --copy
 autoconf
