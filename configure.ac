@@ -1,8 +1,9 @@
 AC_INIT([libstrophe], [trunk], [jack@metajack.im])
+LT_INIT
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
 
 AC_PROG_CC
-AC_PROG_RANLIB
 
 AC_CHECK_HEADER(openssl/ssl.h, [], [AC_MSG_ERROR([couldn't find openssl headers, openssl required])])
 PKG_CHECK_MODULES([check], [check >= 0.9.4])
