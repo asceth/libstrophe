@@ -22,12 +22,14 @@ endif
 lib_LTLIBRARIES = libstrophe.la
 include_HEADERS = strophe.h strophepp.h
 
+EXTRA_DIST = README.txt CHANGES.txt Doxyfile GPL-LICENSE.txt LICENSE.txt MIT-LICENSE.txt docs vs2008
+
 libstrophe_la_CFLAGS=$(STROPHE_FLAGS) $(PARSER_CFLAGS)
 libstrophe_la_SOURCES = src/auth.c src/conn.c src/ctx.c \
 	src/event.c src/handler.c src/hash.c \
 	src/jid.c src/md5.c src/sasl.c src/sha1.c \
 	src/snprintf.c src/sock.c src/stanza.c src/thread.c \
-	src/tls_openssl.c src/util.c
+	src/tls_openssl.c src/util.c src/*.h
 if PARSER_EXPAT
 libstrophe_la_SOURCES += src/parser_expat.c
 else
@@ -36,8 +38,8 @@ endif
 
 libexpat_la_CFLAGS=-DXML_DTD -DXML_NS -DXML_CONTEXT_BYTES=1024 -DXML_STATIC \
 	-I$(top_srcdir)/expat/lib
-libexpat_la_SOURCES=expat/lib/xmlparse.c expat/lib/xmltok.c expat/lib/xmlrole.c
-
+libexpat_la_SOURCES=expat/lib/xmlparse.c expat/lib/xmltok.c expat/lib/xmlrole.c expat/lib/*.h
+noinst_HEADERS=expat/lib/xmltok_impl.c expat/lib/xmltok_ns.c
 
 ## Examples
 noinst_PROGRAMS = examples/active examples/roster examples/basic examples/bot
