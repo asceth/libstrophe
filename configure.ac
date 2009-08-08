@@ -6,7 +6,13 @@ AM_INIT_AUTOMAKE
 AC_PROG_CC
 
 AC_CHECK_HEADER(openssl/ssl.h, [], [AC_MSG_ERROR([couldn't find openssl headers, openssl required])])
-PKG_CHECK_MODULES([check], [check >= 0.9.4])
+
+# check for 'check' unit-testing framework
+PKG_CHECK_MODULES([check], [check >= 0.9.4], [HAVE_CHECK=yes], [
+HAVE_CHECK=no
+echo "Regression tests will not be built"
+])
+AM_CONDITIONAL([HAVE_CHECK], [test x$HAVE_CHECK = xyes])
 
 AC_ARG_WITH([libxml2],
             [AS_HELP_STRING([--with-libxml2], [use libxml2 for XML parsing])],

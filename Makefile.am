@@ -56,6 +56,7 @@ examples_bot_SOURCES = examples/bot.c
 examples_bot_CFLAGS = $(STROPHE_FLAGS)
 examples_bot_LDADD = $(STROPHE_LIBS) 
 
+if HAVE_CHECK
 
 ## Tests
 TESTS = tests/check_parser tests/check_stanza tests/check_ctx
@@ -75,3 +76,5 @@ tests_check_ctx_SOURCES = tests/check_ctx.c
 tests_check_ctx_CFLAGS = @check_CFLAGS@ $(PARSER_CFLAGS) $(STROPHE_FLAGS) \
 	-I$(top_srcdir)/src
 tests_check_ctx_LDADD = @check_LIBS@ $(STROPHE_LIBS)
+
+endif
