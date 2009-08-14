@@ -39,7 +39,10 @@ endif
 libexpat_la_CFLAGS=-DXML_DTD -DXML_NS -DXML_CONTEXT_BYTES=1024 -DXML_STATIC \
 	-I$(top_srcdir)/expat/lib
 libexpat_la_SOURCES=expat/lib/xmlparse.c expat/lib/xmltok.c expat/lib/xmlrole.c expat/lib/*.h
-noinst_HEADERS=expat/lib/xmltok_impl.c expat/lib/xmltok_ns.c
+EXTRA_DIST += expat
+
+dist-hook:
+	rm -rf $(distdir)/expat/.git
 
 ## Examples
 noinst_PROGRAMS = examples/active examples/roster examples/basic examples/bot
