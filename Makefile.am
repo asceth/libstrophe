@@ -3,6 +3,9 @@ AUTOMAKE_OPTIONS = subdir-objects
 
 CFLAGS = -g -Wall -Werror
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libstrophe.pc
+
 builtin_CFLAGS = -I$(top_srcdir)/expat/lib
 builtin_LIBS = libexpat.la
 

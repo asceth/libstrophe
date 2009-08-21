@@ -2,6 +2,7 @@
 *.la
 *~
 .deps
+/libstrophe.pc
 .dirstamp
 .libs/
 .sconsign*
