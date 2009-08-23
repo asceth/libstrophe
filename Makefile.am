@@ -32,8 +32,10 @@ libstrophe_la_LIBADD = $(PARSER_LIBS) -lssl
 libstrophe_la_SOURCES = src/auth.c src/conn.c src/ctx.c \
 	src/event.c src/handler.c src/hash.c \
 	src/jid.c src/md5.c src/sasl.c src/sha1.c \
-	src/snprintf.c src/sock.c src/stanza.c src/thread.c \
+	src/snprintf.c src/sock.c src/stanza.c \
 	src/tls_openssl.c src/util.c src/*.h
+# ALK: this is not used presently, but causes extra dependency on -lpthread
+# libstrophe_la_SOURCES += src/thread.c
 if PARSER_EXPAT
 libstrophe_la_SOURCES += src/parser_expat.c
 else
