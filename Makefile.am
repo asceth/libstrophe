@@ -13,7 +13,7 @@ PARSER_CFLAGS=@PARSER_CFLAGS@
 PARSER_LIBS=@PARSER_LIBS@
 
 STROPHE_FLAGS = -I$(top_srcdir)
-STROPHE_LIBS = libstrophe.la $(PARSER_LIBS) -lssl
+STROPHE_LIBS = libstrophe.la
 
 ## Main build targets
 noinst_LTLIBRARIES =
@@ -28,6 +28,7 @@ include_HEADERS = strophe.h strophepp.h
 EXTRA_DIST = README.txt CHANGES.txt Doxyfile GPL-LICENSE.txt LICENSE.txt MIT-LICENSE.txt docs vs2008
 
 libstrophe_la_CFLAGS=$(STROPHE_FLAGS) $(PARSER_CFLAGS)
+libstrophe_la_LIBADD = $(PARSER_LIBS) -lssl
 libstrophe_la_SOURCES = src/auth.c src/conn.c src/ctx.c \
 	src/event.c src/handler.c src/hash.c \
 	src/jid.c src/md5.c src/sasl.c src/sha1.c \
