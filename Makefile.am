@@ -20,6 +20,7 @@ noinst_LTLIBRARIES =
 
 if BUILD_EXPAT
 noinst_LTLIBRARIES += libexpat.la
+libstrophe_la_DEPENDENCIES = libexpat.la
 endif
 
 lib_LTLIBRARIES = libstrophe.la
