@@ -492,7 +492,7 @@ unsigned char *base64_decode(xmpp_ctx_t *ctx,
 {
     int dlen;
     unsigned char *dbuf, *d;
-    uint32_t word, hextet;
+    uint32_t word, hextet = 0;
     int i;
 
     /* len must be a multiple of 4 */
@@ -557,8 +557,8 @@ unsigned char *base64_decode(xmpp_ctx_t *ctx,
 		if (hextet != 64) goto _base64_decode_error;
 		break;
 	}
+	*d = '\0';
     }
-    *d = '\0';
     return dbuf;
 
 _base64_decode_error:	
