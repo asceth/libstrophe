@@ -1,7 +1,7 @@
 AC_INIT([libstrophe], [trunk], [jack@metajack.im])
-LT_INIT
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
+AC_PROG_LIBTOOL
 
 AC_PROG_CC
 
