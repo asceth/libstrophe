@@ -1,7 +1,7 @@
 /* sock.c
 ** strophe XMPP client library -- socket abstraction implementation
 **
-** Copyright (C) 2005-2008 OGG, LLC. All rights reserved.
+** Copyright (C) 2005-2009 Collecta, Inc. 
 **
 **  This software is provided AS-IS with no warranty, either express
 **  or implied.
@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <sys/types.h>
 
 #ifdef _WIN32
@@ -535,6 +536,12 @@ int sock_srv_lookup(const char *service, const char *proto, const char *domain, 
     int set = 0;
     char fulldomain[2048];
 
+    assert(service);
+    assert(proto);
+    assert(domain);
+    assert(resulttarget);
+    assert(resultport);
+
     snprintf(fulldomain, 2048, "_%s._%s.%s", service, proto, domain);
 #ifdef _WIN32
 
@@ -542,7 +549,7 @@ int sock_srv_lookup(const char *service, const char *proto, const char *domain, 
     if (!set)
     {
         HINSTANCE hdnsapi = NULL;
-	
+
 	DNS_STATUS (WINAPI * pDnsQuery_A)(PCSTR, WORD, DWORD, PIP4_ARRAY, PDNS_RECORD*, PVOID*);
 	void (WINAPI * pDnsRecordListFree)(PDNS_RECORD, DNS_FREE_TYPE);
 
@@ -865,28 +872,29 @@ int sock_srv_lookup(const char *service, const char *proto, const char *domain, 
     if (!set) {
         unsigned char buf[65535];
 	int len;
-	
+
 	if ((len = res_query(fulldomain, C_IN, T_SRV, buf, 65535)) > 0) {
 	    int offset;
 	    int i;
 	    struct dnsquery_header header;
 	    struct dnsquery_question question;
 	    struct dnsquery_resourcerecord rr;
-	    
+
 	    offset = 0;
 	    netbuf_get_dnsquery_header(buf, 65536, &offset, &header);
-	   
+
 	    for (i = 0; i < header.qdcount; i++) {
 		netbuf_get_dnsquery_question(buf, 65536, &offset, &question);
 	    }
 
 	    for (i = 0; i < header.ancount; i++) {
 		netbuf_get_dnsquery_resourcerecord(buf, 65536, &offset, &rr);
-		
+
 		if (rr.type == 33) {
 		    struct dnsquery_srvrdata *srvrdata = &(rr.rdata);
 
-		    snprintf(resulttarget, resulttargetlength, 
+                    assert(srvrdata->target);
+		    snprintf(resulttarget, resulttargetlength, "%s",
 			     srvrdata->target);
 		    *resultport = srvrdata->port;
 		    set = 1;
@@ -895,14 +903,15 @@ int sock_srv_lookup(const char *service, const char *proto, const char *domain, 
 
 	    for (i = 0; i < header.ancount; i++) {
 		netbuf_get_dnsquery_resourcerecord(buf, 65536, &offset, &rr);
-	    }	    
+	    }
 	}
     }
 #endif
 
     if (!set)
     {
-	snprintf(resulttarget, resulttargetlength, domain);
+        assert(domain);
+	snprintf(resulttarget, resulttargetlength, "%s", domain);
 	*resultport = 5222;
 	return 0;
     }

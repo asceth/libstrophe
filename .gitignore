@@ -11,10 +11,13 @@ autom4te.cache
 .dirstamp
 .deps
 .sconsign*
+*~
 src/*.o
 examples/*.o
 tests/*.o
 tests/check_parser
+tests/check_stanza
+tests/check_ctx
 *.a
 docs/html
 TAGS
@@ -31,3 +34,4 @@ tests/test_jid
 tests/test_sasl
 tests/test_sock
 build
+.buildbot

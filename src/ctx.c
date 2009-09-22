@@ -1,7 +1,7 @@
 /* ctx.c
 ** strophe XMPP client library -- run-time context implementation
 **
-** Copyright (C) 2005-2008 OGG, LLC. All rights reserved.
+** Copyright (C) 2005-2009 Collecta, Inc. 
 **
 **  This software is provided AS-IS with no warranty, either express 
 **  or implied.
@@ -154,6 +154,8 @@ void xmpp_default_logger(void * const userdata,
 			 const char * const msg)
 {
     xmpp_log_level_t filter_level = * (xmpp_log_level_t*)userdata;
+    assert(area);
+    assert(msg);
     if (level >= filter_level)
 	fprintf(stderr, "%s %s %s\n", area, _xmpp_log_level_name[level], msg);
 }
@@ -247,29 +249,36 @@ void xmpp_log(const xmpp_ctx_t * const ctx,
 	      const char * const fmt,
 	      va_list ap)
 {
-    int oldret, ret;
+    int ret;
     char smbuf[1024];
-    char *buf;
+    va_list ap_copy;
 
-    buf = smbuf;
-    ret = xmpp_vsnprintf(buf, 1023, fmt, ap);
-    if (ret > 1023) {
-	buf = (char *)xmpp_alloc(ctx, ret + 1);
+    va_copy(ap_copy, ap);
+
+    if (!ctx->log->handler)
+        return;
+
+    ret = xmpp_vsnprintf(smbuf, sizeof(smbuf) - 1, fmt, ap);
+    if (ret > sizeof(smbuf) - 1) {
+        char *buf = (char *)xmpp_alloc(ctx, ret + 1);
+        int oldret = ret;
 	if (!buf) {
 	    buf = NULL;
 	    xmpp_error(ctx, "log", "Failed allocating memory for log message.");
 	    return;
 	}
-	oldret = ret;
-	ret = xmpp_vsnprintf(buf, ret + 1, fmt, ap);
+	ret = xmpp_vsnprintf(buf, ret + 1, fmt, ap_copy);
 	if (ret > oldret) {
 	    xmpp_error(ctx, "log", "Unexpected error");
+            xmpp_free(ctx, buf);
 	    return;
 	}
+        ctx->log->handler(ctx->log->userdata, level, area, buf);
+        xmpp_free(ctx, buf);
+    } else {
+        ctx->log->handler(ctx->log->userdata, level, area, smbuf);
     }
 
-    if (ctx->log->handler)
-        ctx->log->handler(ctx->log->userdata, level, area, buf);
 }
 
 /** Write to the log at the ERROR level.

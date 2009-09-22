@@ -1,7 +1,7 @@
 /* common.h
 ** strophe XMPP client library -- internal common structures
 **
-** Copyright (C) 2005-2008 OGG, LLC. All rights reserved.
+** Copyright (C) 2005-2009 Collecta, Inc. 
 **
 **  This software is provided AS-IS with no warranty, either express or
 **  implied.
@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <assert.h>
 #ifndef _WIN32
 #include <stdint.h>
 #endif
@@ -56,44 +57,60 @@ struct _xmpp_ctx_t {
 
 
 /* convenience functions for accessing the context */
-void *xmpp_alloc(const xmpp_ctx_t * const ctx, const size_t size);
-void *xmpp_realloc(const xmpp_ctx_t * const ctx, void *p, 
-		   const size_t size);
-char *xmpp_strdup(const xmpp_ctx_t * const ctx, const char * const s);
+void *xmpp_alloc(const xmpp_ctx_t * const ctx, const size_t size)
+    __attribute__ ((warn_unused_result));
+void *xmpp_realloc(const xmpp_ctx_t * const ctx, void *p,
+		   const size_t size)
+    __attribute__ ((warn_unused_result));
+char *xmpp_strdup(const xmpp_ctx_t * const ctx, const char * const s)
+    __attribute__ ((warn_unused_result));
 
-void xmpp_log(const xmpp_ctx_t * const ctx, 
+void xmpp_log(const xmpp_ctx_t * const ctx,
 	      const xmpp_log_level_t level,
 	      const char * const area,
-	      const char * const fmt, 
-	      va_list ap);
+	      const char * const fmt,
+              va_list ap);
 
 /* wrappers for xmpp_log at specific levels */
 void xmpp_error(const xmpp_ctx_t * const ctx,
 		const char * const area,
 		const char * const fmt,
-		...);
+		...)
+    __attribute__ ((format (printf, 3, 4)));
+
 void xmpp_warn(const xmpp_ctx_t * const ctx,
 		const char * const area,
 		const char * const fmt,
-		...);
+		...)
+    __attribute__ ((format (printf, 3, 4)));
+
 void xmpp_info(const xmpp_ctx_t * const ctx,
 		const char * const area,
 		const char * const fmt,
-		...);
+		...)
+    __attribute__ ((format (printf, 3, 4)));
+
 void xmpp_debug(const xmpp_ctx_t * const ctx,
 		const char * const area,
 		const char * const fmt,
-		...);
+		...)
+    __attribute__ ((format (printf, 3, 4)));
+
 
 /** jid */
 /* these return new strings that must be xmpp_free()'d */
 char *xmpp_jid_new(xmpp_ctx_t *ctx, const char *node,
                                     const char *domain,
-                                    const char *resource);
-char *xmpp_jid_bare(xmpp_ctx_t *ctx, const char *jid);
-char *xmpp_jid_node(xmpp_ctx_t *ctx, const char *jid);
-char *xmpp_jid_domain(xmpp_ctx_t *ctx, const char *jid);
-char *xmpp_jid_resource(xmpp_ctx_t *ctx, const char *jid);
+                                    const char *resource)
+    __attribute__ ((warn_unused_result));
+char *xmpp_jid_bare(xmpp_ctx_t *ctx, const char *jid)
+    __attribute__ ((warn_unused_result));
+char *xmpp_jid_node(xmpp_ctx_t *ctx, const char *jid)
+    __attribute__ ((warn_unused_result));
+char *xmpp_jid_domain(xmpp_ctx_t *ctx, const char *jid)
+    __attribute__ ((warn_unused_result));
+char *xmpp_jid_resource(xmpp_ctx_t *ctx, const char *jid)
+    __attribute__ ((warn_unused_result));
 
 
 /** connection **/
@@ -130,18 +147,18 @@ struct _xmpp_handlist_t {
 	struct {
 	    unsigned long period;
 	    uint64_t last_stamp;
-	};
+	} tjobs;
 	/* id handlers */
 	struct {
 	    char *id;
-	};
+	} resp;
 	/* normal handlers */
 	struct {
 	    char *ns;
 	    char *name;
 	    char *type;
-	};
-    };
+	} req;
+    } param;
 };
 
 #define SASL_MASK_PLAIN 0x01
@@ -269,7 +286,16 @@ void disconnect_mem_error(xmpp_conn_t * const conn);
 void auth_handle_open(xmpp_conn_t * const conn);
 
 /* replacement snprintf and vsnprintf */
+#ifdef HAVE_SNPRINTF
+# define xmpp_snprintf snprintf
+#else
 int xmpp_snprintf (char *str, size_t count, const char *fmt, ...);
+#endif
+
+#ifdef HAVE_VSNPRINTF
+# define xmpp_vsnprintf vsnprintf
+#else
 int xmpp_vsnprintf (char *str, size_t count, const char *fmt, va_list arg);
+#endif
 
 #endif /* __LIBSTROPHE_COMMON_H__ */
