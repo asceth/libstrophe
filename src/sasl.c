@@ -1,7 +1,7 @@
 /* sasl.c
 ** strophe XMPP client library -- SASL authentication helpers
 ** 
-** Copyright (C) 2005-2008 OGG, LLC. All rights reserved.
+** Copyright (C) 2005-2009 Collecta, Inc. 
 **
 **  This software is provided AS-IS with no warranty, either express
 **  or implied.
@@ -168,13 +168,18 @@ static void _digest_to_hex(const char *digest, char *hex)
 }
 
 /** append 'key="value"' to a buffer, growing as necessary */
-static char *_add_key(xmpp_ctx_t *ctx, hash_t *table, const char *key, 
+static char *_add_key(xmpp_ctx_t *ctx, hash_t *table, const char *key,
 		      char *buf, int *len, int quote)
 {
     int olen,nlen;
     int keylen, valuelen;
     const char *value, *qvalue;
     char *c;
+
+    assert(ctx);
+    assert(table);
+    assert(key);
+    assert(len);
 
     /* allocate a zero-length string if necessary */
     if (buf == NULL) {

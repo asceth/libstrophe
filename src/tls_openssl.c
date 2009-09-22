@@ -1,7 +1,7 @@
 /* tls_openssl.c
 ** strophe XMPP client library -- TLS abstraction openssl impl.
 **
-** Copyright (C) 2005-008 OGG, LLC. All rights reserved.
+** Copyright (C) 2005-008 Collecta, Inc. 
 **
 **  This software is provided AS-IS with no warranty, either express
 **  or implied.
@@ -88,6 +88,7 @@ tls_t *tls_new(xmpp_ctx_t *ctx, sock_t sock)
 void tls_free(tls_t *tls)
 {
     SSL_CTX_free(tls->ssl_ctx);
+    SSL_free(tls->ssl);
     xmpp_free(tls->ctx, tls);
     return;
 }

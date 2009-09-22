@@ -1,7 +1,7 @@
 /* handler.c
 ** strophe XMPP client library -- event handler management
 **
-** Copyright (C) 2005-2008 OGG, LLC. All rights reserved.
+** Copyright (C) 2005-2009 Collecta, Inc. 
 **
 **  This software is provided AS-IS with no warranty, either express
 **  or implied.
@@ -66,7 +66,7 @@ void handler_fire_stanza(xmpp_conn_t * const conn,
 		    hash_drop(conn->id_handlers, id);
 		    hash_add(conn->id_handlers, id, next);
 		}
-                xmpp_free(conn->ctx, item->id);
+                xmpp_free(conn->ctx, item->param.resp.id);
 		xmpp_free(conn->ctx, item);
 		item = NULL;
 	    }
@@ -102,19 +102,21 @@ void handler_fire_stanza(xmpp_conn_t * const conn,
 	    continue;
 	}
 
-	if ((!item->ns || (ns && strcmp(ns, item->ns) == 0) ||
-	     xmpp_stanza_get_child_by_ns(stanza, item->ns)) &&
-	    (!item->name || (name && strcmp(name, item->name) == 0)) &&
-	    (!item->type || (type && strcmp(type, item->type) == 0)))
+	if ((!item->param.req.ns || (ns && strcmp(ns, item->param.req.ns) == 0) ||
+	     xmpp_stanza_get_child_by_ns(stanza, item->param.req.ns)) &&
+	    (!item->param.req.name ||
+             (name && strcmp(name, item->param.req.name) == 0)) &&
+	    (!item->param.req.type ||
+             (type && strcmp(type, item->param.req.type) == 0)))
 	    if (!((xmpp_handler)(item->handler))(conn, stanza, item->userdata)) {
 		/* handler is one-shot, so delete it */
 		if (prev)
 		    prev->next = item->next;
 		else
 		    conn->handlers = item->next;
-                if (item->ns) xmpp_free(conn->ctx, item->ns);
-                if (item->name) xmpp_free(conn->ctx, item->name);
-                if (item->type) xmpp_free(conn->ctx, item->type);
+                xmpp_free(conn->ctx, item->param.req.ns);
+                xmpp_free(conn->ctx, item->param.req.name);
+                xmpp_free(conn->ctx, item->param.req.type);
 		xmpp_free(conn->ctx, item);
 		item = NULL;
 	    }
@@ -172,21 +174,24 @@ uint64_t handler_fire_timed(xmpp_ctx_t * const ctx)
 	    }
 
 	    fired = 0;
-	    elapsed = time_elapsed(handitem->last_stamp, time_stamp());
-	    if (elapsed >= handitem->period) {
+	    elapsed = time_elapsed(handitem->param.tjobs.last_stamp,
+                                   time_stamp());
+	    if (elapsed >= handitem->param.tjobs.period) {
 		/* fire! */
 		fired = 1;
-		handitem->last_stamp = time_stamp();
+		handitem->param.tjobs.last_stamp = time_stamp();
 		ret = ((xmpp_timed_handler)handitem->handler)(connitem->conn, handitem->userdata);
-	    } else if (min > (handitem->period - elapsed))
-		min = handitem->period - elapsed;
+	    } else if (min > (handitem->param.tjobs.period - elapsed))
+		min = handitem->param.tjobs.period - elapsed;
 		
 	    temp = handitem;
 	    handitem = handitem->next;
 
 	    /* delete handler if it returned false */
-	    if (fired && !ret)
-		xmpp_timed_handler_delete(connitem->conn, temp->handler);
+	    if (fired && !ret) {
+		xmpp_timed_handler_delete(connitem->conn,
+                                          (xmpp_timed_handler)temp->handler);
+            }
 	}
 
 	connitem = connitem->next;
@@ -208,7 +213,7 @@ void handler_reset_timed(xmpp_conn_t *conn, int user_only)
     handitem = conn->timed_handlers;
     while (handitem) {
 	if ((user_only && handitem->user_handler) || !user_only)
-	    handitem->last_stamp = time_stamp();
+	    handitem->param.tjobs.last_stamp = time_stamp();
 	
 	handitem = handitem->next;
     }
@@ -239,8 +244,8 @@ static void _timed_handler_add(xmpp_conn_t * const conn,
     item->enabled = 0;
     item->next = NULL;
 
-    item->period = period;
-    item->last_stamp = time_stamp();
+    item->param.tjobs.period = period;
+    item->param.tjobs.last_stamp = time_stamp();
 
     /* append item to list */
     if (!conn->timed_handlers)
@@ -312,8 +317,8 @@ static void _id_handler_add(xmpp_conn_t * const conn,
     item->enabled = 0;
     item->next = NULL;
 
-    item->id = xmpp_strdup(conn->ctx, id);
-    if (!item->id) {
+    item->param.resp.id = xmpp_strdup(conn->ctx, id);
+    if (!item->param.resp.id) {
 	xmpp_free(conn->ctx, item);
 	return;
     }
@@ -362,7 +367,7 @@ void xmpp_id_handler_delete(xmpp_conn_t * const conn,
 	    hash_drop(conn->id_handlers, id);
 	    hash_add(conn->id_handlers, id, item->next);
 	}
-	xmpp_free(conn->ctx, item->id);
+	xmpp_free(conn->ctx, item->param.resp.id);
 	xmpp_free(conn->ctx, item);
     }
 }
@@ -395,31 +400,31 @@ static void _handler_add(xmpp_conn_t * const conn,
     item->next = NULL;
     
     if (ns) {
-	item->ns = xmpp_strdup(conn->ctx, ns);
-	if (!item->ns) {
+	item->param.req.ns = xmpp_strdup(conn->ctx, ns);
+	if (!item->param.req.ns) {
 	    xmpp_free(conn->ctx, item);
 	    return;
 	}
     } else
-	item->ns = NULL;
+	item->param.req.ns = NULL;
     if (name) {
-	item->name = xmpp_strdup(conn->ctx, name);
-	if (!item->name) {
-	    if (item->ns) xmpp_free(conn->ctx, item->ns);
+	item->param.req.name = xmpp_strdup(conn->ctx, name);
+	if (!item->param.req.name) {
+	    xmpp_free(conn->ctx, item->param.req.ns);
 	    xmpp_free(conn->ctx, item);
 	    return;
 	}
     } else
-	item->name = NULL;
+	item->param.req.name = NULL;
     if (type) {
-	item->type = xmpp_strdup(conn->ctx, type);
-	if (!item->type) {
-	    if (item->ns) xmpp_free(conn->ctx, item->ns);
-	    if (item->name) xmpp_free(conn->ctx, item->name);
+	item->param.req.type = xmpp_strdup(conn->ctx, type);
+	if (!item->param.req.type) {
+	    xmpp_free(conn->ctx, item->param.req.ns);
+	    xmpp_free(conn->ctx, item->param.req.name);
 	    xmpp_free(conn->ctx, item);
 	}
     } else
-	item->type = NULL;
+	item->param.req.type = NULL;
 
     /* append to list */
     if (!conn->handlers)
@@ -462,9 +467,9 @@ void xmpp_handler_delete(xmpp_conn_t * const conn,
 	else
 	    conn->handlers = item->next;
 
-	if (item->ns) xmpp_free(conn->ctx, item->ns);
-	if (item->name) xmpp_free(conn->ctx, item->name);
-	if (item->type) xmpp_free(conn->ctx, item->type);
+	xmpp_free(conn->ctx, item->param.req.ns);
+	xmpp_free(conn->ctx, item->param.req.name);
+	xmpp_free(conn->ctx, item->param.req.type);
 	xmpp_free(conn->ctx, item);
     }
 }

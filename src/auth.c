@@ -1,7 +1,7 @@
 /* auth.c
 ** strophe XMPP client library -- auth functions and handlers
 **
-** Copyright (C) 2005-2008 OGG, LLC. All rights reserved.
+** Copyright (C) 2005-2009 Collecta, Inc. 
 **
 **  This software is provided AS-IS with no warranty, either express or
 **  implied.
@@ -56,7 +56,6 @@
 #endif
 
 static void _auth(xmpp_conn_t * const conn);
-static void _handle_open_tls(xmpp_conn_t * const conn);
 static void _handle_open_sasl(xmpp_conn_t * const conn);
 static int _handle_missing_legacy(xmpp_conn_t * const conn,
 				  void * const userdata);
@@ -259,7 +258,8 @@ static int _handle_proceedtls_default(xmpp_conn_t * const conn,
 {
     char *name;
     name = xmpp_stanza_get_name(stanza);
-    xmpp_debug(conn->ctx, "xmpp", 
+    assert(name);
+    xmpp_debug(conn->ctx, "xmpp",
 	"handle proceedtls called for %s", name);
 
     if (strcmp(name, "proceed") == 0) {
@@ -273,7 +273,7 @@ static int _handle_proceedtls_default(xmpp_conn_t * const conn,
 	    tls_free(conn->tls);
 	    conn->tls = NULL;
 	    conn->tls_failed = 1;
-	
+
 	    /* failed tls spoils the connection, so disconnect */
 	    xmpp_disconnect(conn);
 	}
@@ -293,20 +293,23 @@ static int _handle_sasl_result(xmpp_conn_t * const conn,
 			       xmpp_stanza_t * const stanza,
 			       void * const userdata)
 {
-    char *name;
+    char *name = NULL;
+
+    assert(userdata);
 
     name = xmpp_stanza_get_name(stanza);
+    assert(name);
 
     /* the server should send a <success> or <failure> stanza */
     if (strcmp(name, "failure") == 0) {
-	xmpp_debug(conn->ctx, "xmpp", "SASL %s auth failed", 
+	xmpp_debug(conn->ctx, "xmpp", "SASL %s auth failed",
 		   (char *)userdata);
-	
+
 	/* fall back to next auth method */
 	_auth(conn);
     } else if (strcmp(name, "success") == 0) {
 	/* SASL PLAIN auth successful, we need to restart the stream */
-	xmpp_debug(conn->ctx, "xmpp", "SASL %s auth successful", 
+	xmpp_debug(conn->ctx, "xmpp", "SASL %s auth successful",
 		   (char *)userdata);
 
 	/* reset parser */
@@ -316,8 +319,8 @@ static int _handle_sasl_result(xmpp_conn_t * const conn,
 	conn_open_stream(conn);
     } else {
 	/* got unexpected reply */
-	xmpp_error(conn->ctx, "xmpp", "Got unexpected reply to SASL %s"\
-		   "authentication.", (char *)userdata);
+	xmpp_error(conn->ctx, "xmpp", "Got unexpected reply to SASL %s"
+		   " authentication.", (char *)userdata);
 	xmpp_disconnect(conn);
     }
 
@@ -335,6 +338,7 @@ static int _handle_digestmd5_challenge(xmpp_conn_t * const conn,
     char *name;
 
     name = xmpp_stanza_get_name(stanza);
+    assert(name);
     xmpp_debug(conn->ctx, "xmpp",\
 	"handle digest-md5 (challenge) called for %s", name);
 
@@ -351,10 +355,10 @@ static int _handle_digestmd5_challenge(xmpp_conn_t * const conn,
 	if (!auth) {
 	    disconnect_mem_error(conn);
 	    return 0;
-	}	
+	}
 	xmpp_stanza_set_name(auth, "response");
 	xmpp_stanza_set_ns(auth, XMPP_NS_SASL);
-	
+
 	authdata = xmpp_stanza_new(conn->ctx);
 	if (!authdata) {
 	    disconnect_mem_error(conn);
@@ -390,6 +394,7 @@ static int _handle_digestmd5_rspauth(xmpp_conn_t * const conn,
     char *name;
 
     name = xmpp_stanza_get_name(stanza);
+    assert(name);
     xmpp_debug(conn->ctx, "xmpp",
 	"handle digest-md5 (rspauth) called for %s", name);
 
@@ -400,7 +405,7 @@ static int _handle_digestmd5_rspauth(xmpp_conn_t * const conn,
 	if (!auth) {
 	    disconnect_mem_error(conn);
 	    return 0;
-	}	
+	}
 	xmpp_stanza_set_name(auth, "response");
 	xmpp_stanza_set_ns(auth, XMPP_NS_SASL);
 	xmpp_send(conn, auth);
@@ -788,7 +793,9 @@ static int _handle_features_sasl(xmpp_conn_t * const conn,
 	    }
 	    xmpp_stanza_set_text(text, resource);
 	    xmpp_stanza_add_child(res, text);
+            xmpp_stanza_release(text);
 	    xmpp_stanza_add_child(bind, res);
+            xmpp_stanza_release(res);
 	    xmpp_free(conn->ctx, resource);
 	}
 

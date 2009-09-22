@@ -1,7 +1,7 @@
 /* conn.c
 ** strophe XMPP client library -- connection object functions
 **
-** Copyright (C) 2005-2008 OGG, LLC. All rights reserved.
+** Copyright (C) 2005-2009 Collecta, Inc. 
 **
 **  This software is provided AS-IS with no warranty, either express
 **  or implied.
@@ -239,7 +239,7 @@ int xmpp_conn_release(xmpp_conn_t * const conn)
 	    while (hlitem) {
 		thli = hlitem;
 		hlitem = hlitem->next;
-		xmpp_free(conn->ctx, thli->id);
+		xmpp_free(conn->ctx, thli->param.resp.id);
 		xmpp_free(conn->ctx, thli);
 	    }
 	}
@@ -251,9 +251,9 @@ int xmpp_conn_release(xmpp_conn_t * const conn)
 	    thli = hlitem;
 	    hlitem = hlitem->next;
 
-	    if (thli->ns) xmpp_free(ctx, thli->ns);
-	    if (thli->name) xmpp_free(ctx, thli->name);
-	    if (thli->type) xmpp_free(ctx, thli->type);
+	    xmpp_free(ctx, thli->param.req.ns);
+	    xmpp_free(ctx, thli->param.req.name);
+	    xmpp_free(ctx, thli->param.req.type);
 	    xmpp_free(ctx, thli);
 	}
 
@@ -409,15 +409,12 @@ int xmpp_connect_client(xmpp_conn_t * const conn,
         connectport = altport ? altport : 5222;
     } else if (!sock_srv_lookup("xmpp-client", "tcp", conn->domain,
                                 connectdomain, 2048, &connectport)) {
-	    xmpp_debug(conn->ctx, "xmpp", "SRV lookup failed.");
-	    if (!altdomain)
-		    domain = conn->domain;
-	    else
-		    domain = altdomain;
-	    xmpp_debug(conn->ctx, "xmpp", "Using alternate domain %s, port %d",
-                   altdomain, altport);
-	    strcpy(connectdomain, domain);
-	    connectport = altport ? altport : 5222;
+        xmpp_debug(conn->ctx, "xmpp", "SRV lookup failed.");
+        domain = conn->domain;
+        xmpp_debug(conn->ctx, "xmpp", "Using srv domain %s, port %d",
+                   domain, altport);
+        strncpy(connectdomain, domain, sizeof(connectdomain)-1);
+        connectport = altport ? altport : 5222;
     }
     conn->sock = sock_connect(connectdomain, connectport);
     xmpp_debug(conn->ctx, "xmpp", "sock_connect to %s:%d returned %d",
@@ -633,10 +630,10 @@ void xmpp_send(xmpp_conn_t * const conn,
 {
     char *buf;
     size_t len;
-    int ret;
 
     if (conn->state == XMPP_STATE_CONNECTED) {
-	if ((ret = xmpp_stanza_to_text(stanza, &buf, &len)) == 0) {
+	if (xmpp_stanza_to_text(stanza, &buf, &len) == 0) {
+            assert(buf);
 	    xmpp_send_raw(conn, buf, len);
 	    xmpp_debug(conn->ctx, "conn", "SENT: %s", buf);
 	    xmpp_free(conn->ctx, buf);
@@ -652,13 +649,16 @@ void xmpp_send(xmpp_conn_t * const conn,
  */
 void conn_open_stream(xmpp_conn_t * const conn)
 {
-    xmpp_send_raw_string(conn, 
+    assert(conn);
+    assert(conn->domain);
+    assert(conn->lang);
+    xmpp_send_raw_string(conn,
 			 "<?xml version=\"1.0\"?>"			\
 			 "<stream:stream to=\"%s\" "			\
 			 "xml:lang=\"%s\" "				\
 			 "version=\"1.0\" "				\
 			 "xmlns=\"%s\" "				\
-			 "xmlns:stream=\"%s\">", 
+			 "xmlns:stream=\"%s\">",
 			 conn->domain,
 			 conn->lang,
 			 conn->type == XMPP_CLIENT ? XMPP_NS_CLIENT : XMPP_NS_COMPONENT,
@@ -668,18 +668,21 @@ void conn_open_stream(xmpp_conn_t * const conn)
 static void _log_open_tag(xmpp_conn_t *conn, char **attrs)
 {
     char buf[4096];
-    size_t len, pos;
+    size_t pos;
+    int len;
     int i;
-    
+
     if (!attrs) return;
 
     pos = 0;
     len = xmpp_snprintf(buf, 4096, "<stream:stream");
     if (len < 0) return;
-    
+
     pos += len;
-    
+
     for (i = 0; attrs[i]; i += 2) {
+        assert(attrs[i]);
+        assert(attrs[i+1]);
         len = xmpp_snprintf(&buf[pos], 4096 - pos, " %s='%s'",
                             attrs[i], attrs[i+1]);
         if (len < 0) return;
@@ -709,7 +712,9 @@ static void _handle_stream_start(char *name, char **attrs,
                                  void * const userdata)
 {
     xmpp_conn_t *conn = (xmpp_conn_t *)userdata;
-    char *id;
+    char *id = NULL;
+
+    assert(name);
 
     if (strcmp(name, "stream:stream") != 0) {
         printf("name = %s\n", name);
@@ -717,7 +722,7 @@ static void _handle_stream_start(char *name, char **attrs,
         conn_disconnect(conn);
     } else {
         _log_open_tag(conn, attrs);
-        
+
         if (conn->stream_id) xmpp_free(conn->ctx, conn->stream_id);
 
         id = _get_stream_attribute(attrs, "id");
@@ -729,7 +734,7 @@ static void _handle_stream_start(char *name, char **attrs,
             conn_disconnect(conn);
         }
     }
-    
+
     /* call stream open handler */
     conn->open_handler(conn);
 }
@@ -752,6 +757,7 @@ static void _handle_stream_stanza(xmpp_stanza_t *stanza,
     size_t len;
 
     if (xmpp_stanza_to_text(stanza, &buf, &len) == 0) {
+        assert(buf);
         xmpp_debug(conn->ctx, "xmpp", "RECV: %s", buf);
         xmpp_free(conn->ctx, buf);
     }
